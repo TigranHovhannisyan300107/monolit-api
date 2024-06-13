@@ -1,0 +1,92 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      target: ${NODE_ENV}
+    container_name: monolith-api
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+      - postgres_first_part
+      - postgres_second_part
+      - redis
+    networks:
+      - monolith-api-network
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo:/data/db
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+    networks:
+      - monolith-api-network
+
+  postgres_first_part:
+    image: postgres:latest
+    container_name: postgres_first_part
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_FIRST_PART}
+      POSTGRES_USER: ${POSTGRES_USER_FIRST_PART}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_FIRST_PART}
+    volumes:
+      - postgres_first_part_data:/var/lib/postgresql/data
+    networks:
+      - monolith-api-network
+
+  postgres_second_part:
+    image: postgres:latest
+    container_name: postgres_second_part
+    ports:
+      - "5434:5432"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SECOND_PART}
+      POSTGRES_USER: ${POSTGRES_USER_SECOND_PART}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SECOND_PART}
+    volumes:
+      - postgres_second_part_data:/var/lib/postgresql/data
+    networks:
+      - monolith-api-network
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    env_file:
+      - .env
+    volumes:
+      - redis_data:/data
+    networks:
+      - monolith-api-network
+
+volumes:
+  mongo:
+  postgres_first_part_data:
+  postgres_second_part_data:
+  redis_data:
+
+networks:
+  monolith-api-network:
+    name: monolith-api-network
+    external: true
